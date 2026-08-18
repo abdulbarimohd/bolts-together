@@ -8,12 +8,10 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-
     "// cloudflare": "preview runs the real Worker locally in workerd, which is the only way to catch runtime differences before deploying",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv",
-
     "// prisma": "generate must be re-run after any schema change, or the client silently keeps the old types",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
@@ -35,6 +33,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.3.1",
     "tailwindcss": "^4",

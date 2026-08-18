@@ -1,3 +1,6 @@
+// Prisma 7 no longer loads .env automatically — the config file has to do it,
+// and this import must come before defineConfig runs or env() finds nothing.
+import "dotenv/config";
 import { defineConfig, env } from "prisma/config";
 
 // Prisma 7 moved the datasource URL out of schema.prisma and into this file.

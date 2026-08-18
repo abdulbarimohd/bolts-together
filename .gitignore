@@ -21,6 +21,8 @@ dist/
 # prisma
 prisma/*.db
 prisma/*.db-journal
+# Generated client — rebuilt by `npm run db:generate`, never edited by hand.
+lib/generated/
 
 # cloudflare / opennext
 .open-next/
