@@ -16,8 +16,8 @@ affiliate links. Successor to Build My Bike (formerly Bike PartPicker).
 | Codebase | New repo. Port the compatibility engine, schema and verified data across. |
 | Name | **Bolts Together** — from the existing tagline "a bike that actually bolts together" |
 | Domains | `.co.uk`, `.com` and `.bike` all confirmed available |
-| Frontend | Next.js (App Router) on Vercel |
-| Database | **Neon** — serverless Postgres, free tier, Vercel-native, branching for previews |
+| Frontend | Next.js (App Router) on **Cloudflare Workers** via the OpenNext adapter |
+| Database | **Neon** — serverless Postgres, free tier, branching for preview deploys |
 | ORM | Prisma (carried over) |
 | Theme | **Dark only** |
 | Palette | **Technical blueprint** — ink `#0A0C10`, panel `#141821`, text `#E6EAF2`, accent `#FF5D2E`, grid `#1E2634`, fits `#3DDC97`, blocked `#FF4D4D` |
@@ -34,14 +34,30 @@ affiliate links. Successor to Build My Bike (formerly Bike PartPicker).
 
 ---
 
-## Phase 0 — Secure the name (yours, do this first)
+## Phase 0 — Secure the name (yours, but NOT yet)
 
-Register **boltstogether.co.uk**, **.com** and **.bike**. All three were free when
-checked on 2026-08-18, but availability changes daily and every branded asset we
-build after this depends on the name. Nothing else should start until this is done.
+Register **boltstogether.co.uk**, **.com** and **.bike** — all three confirmed free
+on 2026-08-18.
 
-I can't purchase domains for you — that needs your payment details, which I won't
-handle. Any registrar is fine.
+**Timing: do this shortly before launch, not now.** Every phase up to launch runs
+on a free hosting subdomain, so a paid domain sitting idle for months earns
+nothing. Two things make waiting low-risk here:
+
+- "Bolts Together" is a two-word phrase, not a premium dictionary term — there is
+  no meaningful squatting demand for it.
+- Availability was checked directly against the Nominet, Verisign and Identity
+  Digital **registries**, not a registrar's search box. Some registrars have been
+  accused of front-running searched names; going via RDAP means the name was never
+  exposed to one.
+
+If budget is tight, **`.co.uk` alone is the one that matters** for a UK site
+(~£8–12/yr). `.com` and `.bike` are defensive registrations that can wait.
+
+I can't purchase domains — that needs payment details, which I won't handle.
+Enable auto-renew, decline every upsell, and note that Nominet only permits
+address privacy for individuals *not trading* — an affiliate site plausibly
+counts as trading, which would make a home address public. Use a business or
+forwarding address.
 
 Also needed from you before Phase 6:
 - Awin **publisher ID** and API/feed credentials
@@ -53,10 +69,13 @@ Also needed from you before Phase 6:
 
 ## Phase 1 — Foundation
 
-Fresh Next.js App Router project, TypeScript strict, Tailwind. Neon project with
-a `main` branch for production and preview branches wired to Vercel. Prisma schema
-ported from the predecessor, with these changes made **during** the port rather
-than after:
+Fresh Next.js App Router project, TypeScript strict, Tailwind, deployed to
+Cloudflare Workers through the OpenNext adapter. Neon project with a `main` branch
+for production and preview branches per pull request. Prisma set up for the
+Workers runtime (driver adapter over HTTP, not the standard TCP client — this is
+the one real gotcha of the Cloudflare route and is worth getting right on day
+one). Schema ported from the predecessor, with these changes made **during** the
+port rather than after:
 
 1. **`Build.userId` becomes nullable** + a `sessionToken` column, so a build can
    exist before anyone signs up. This is the single biggest conversion fix.
@@ -191,9 +210,39 @@ Built retailer-agnostic from the start, because you plan to add networks:
 
 SEO (per-page metadata, sitemap, JSON-LD, SSR on content pages — the predecessor
 already proved this out), Lighthouse pass with the 3D and motion in place,
-keyboard and screen-reader pass, domain cutover from Vercel subdomain to
-`boltstogether.co.uk`, redirects from the old Build My Bike URLs to preserve
+keyboard and screen-reader pass, domain cutover from the `workers.dev` subdomain
+to `boltstogether.co.uk`, redirects from the old Build My Bike URLs to preserve
 whatever SEO has accrued.
+
+**This is the first phase that costs money** — and only the domain. See below.
+
+---
+
+## What this costs
+
+The whole build runs on £0. Nothing between here and launch requires payment.
+
+| Item | Cost | When |
+|---|---|---|
+| GitHub | Free | — |
+| Cloudflare Workers | **Free** — and unlike Vercel's Hobby plan, the free tier permits commercial use | — |
+| Neon Postgres | Free tier | — |
+| Next.js, Prisma, React Three Fiber, Tailwind | Free, open source | — |
+| Part data | Free — sourced from manufacturer specs and affiliate feeds | — |
+| **Domain** | **~£8–12/yr** for `.co.uk` alone | Phase 8 only |
+
+**Total to build: £0. Total at launch: about a tenner a year.**
+
+Why not Vercel: its fair-use policy restricts the Hobby plan to non-commercial
+personal use, and its definition of commercial explicitly covers sites whose
+primary purpose is affiliate linking. That is exactly this project, so Hobby is
+not available to us and Pro is $20/month. Cloudflare's free tier carries no such
+restriction. This also applies to the existing Build My Bike deployment, which is
+worth being aware of.
+
+Costs only appear if the site succeeds: Neon's paid tier if the database outgrows
+the free allowance, and Cloudflare's $5/month Workers plan if traffic exceeds
+100,000 requests a day. Both are good problems.
 
 ---
 
