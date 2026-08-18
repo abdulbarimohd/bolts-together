@@ -1,0 +1,28 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "bolts-together",
+
+  // OpenNext compiles the Next.js app into a single Worker entrypoint plus a
+  // static asset directory. Both paths are produced by `opennextjs-cloudflare
+  // build` — don't point these at .next/ directly.
+  "main": ".open-next/worker.js",
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+
+  "compatibility_date": "2026-08-18",
+
+  // nodejs_compat is required by Next.js itself (and by Prisma). Without it the
+  // Worker fails at runtime on missing node: builtins rather than at build time,
+  // which is a confusing way to find out.
+  "compatibility_flags": ["nodejs_compat"],
+
+  "observability": {
+    "enabled": true
+  }
+
+  // Secrets (DATABASE_URL, and later the Awin credentials) are NOT set here.
+  // Local values live in .dev.vars, which is gitignored; production values are
+  // set with `wrangler secret put NAME`. Never commit either.
+}

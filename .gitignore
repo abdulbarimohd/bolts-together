@@ -22,8 +22,12 @@ dist/
 prisma/*.db
 prisma/*.db-journal
 
-# vercel
-.vercel
+# cloudflare / opennext
+.open-next/
+.wrangler/
+.dev.vars
+.dev.vars.*
+worker-configuration.d.ts
 
 # typescript
 *.tsbuildinfo
