@@ -160,6 +160,19 @@ filtered by discipline and budget, clicking out to Awin retailers.
 
 ## Phase 7 — Affiliate layer
 
+> **⚠ BLOCKER — resolve before building this phase.**
+> - [ ] Awin **publisher ID**
+> - [ ] Awin **API / product-feed credentials**
+> - [ ] The **tracked deep-link format** Awin issued for Ribble
+> - [ ] **Does Ribble's feed carry component-level products, or complete bikes only?**
+>       This decides whether "buy price on every part" is deliverable at launch, and
+>       whether licensed feed images are available as an imagery source. If it's
+>       bikes-only, this phase and the imagery plan both need reworking — much
+>       cheaper to discover now than after building.
+>
+> Also: remove the stale Impact.com verification tag carried over from the old
+> site. The live relationship is Awin.
+
 Built retailer-agnostic from the start, because you plan to add networks:
 
 - A `Retailer` + `AffiliateNetwork` model; adding Awin, Impact or another network
