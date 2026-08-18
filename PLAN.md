@@ -9,6 +9,36 @@ affiliate links. Successor to Build My Bike (formerly Bike PartPicker).
 
 ---
 
+## Status — 19 August 2026
+
+| Phase | State |
+|---|---|
+| 0 — Domain | Deferred to launch. `boltstogether.co.uk/.com/.bike` all free as of 18 Aug. |
+| 1 — Foundation | **Done.** Next 16.3.1 + OpenNext on Workers, Neon (London), schema migrated. |
+| 2 — Engine | **Done.** 103 rules ported, **128 tests green**. |
+| 3 — Data | **Done for road/gravel.** 773 parts, 122 bike models, 542 links, 478 prices in Neon. MTB sourcing in progress. |
+| 4 — Design system | In progress. |
+| 5 — 3D hero | Not started. Depends on Phase 4. |
+| 6 — Three sections | Backend in progress; UI depends on Phases 4 + 6-backend. |
+| 7 — Affiliate layer | In progress. **Blocked on Awin credentials + the feed-coverage answer.** |
+| 8 — Launch | Not started. |
+
+**Live:** `bolts-together.bolts-together.workers.dev` (stale build — a fresh
+deploy is pending the size fix landing).
+
+**Coverage today:** gravel 82, road 32, endurance 5, trail 2, xc 1. MTB is
+effectively unsourced despite being a launch discipline — this is the largest
+open gap.
+
+**Data recovery note.** The bike rows were missing from every database when
+Phase 3 began — both the old production and local databases held 3 models, not
+the 122 the session log described. They were recoverable only because the import
+scripts carry their verified data *inline* rather than reading external files:
+the research lived in git, not just in Postgres. **Keep sourced data as
+committed fixtures, never solely as rows.**
+
+---
+
 ## Decisions taken (2026-08-18)
 
 | Area | Decision |
