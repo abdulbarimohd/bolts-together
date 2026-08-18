@@ -1,5 +1,5 @@
 // ============================================================
-// prisma/schema.prisma — Bike PartPicker
+// prisma/schema.prisma — Bolts Together
 //
 // Class-table inheritance, same pattern as a PC parts DB: one
 // shared `Part` table holds fields every component has (name,
@@ -27,6 +27,19 @@ generator client {
   runtime      = "workerd"
   moduleFormat = "esm"
 }
+// A second client, built for plain Node.
+//
+// The workerd client above cannot run outside the Workers runtime, and the
+// Phase 3 import/sourcing scripts are ordinary Node programs. Rather than
+// contort those into a Worker, generate a Node-targeted client alongside it.
+// Same schema, same types -- only the runtime shim differs.
+generator scripts {
+  provider     = "prisma-client"
+  output       = "../lib/generated/prisma-node"
+  runtime      = "nodejs"
+  moduleFormat = "esm"
+}
+
 
 datasource db {
   // No `url` here: Prisma 7 moved connection strings out of the schema.

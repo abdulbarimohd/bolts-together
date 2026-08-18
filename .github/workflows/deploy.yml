@@ -1,0 +1,51 @@
+name: Deploy to Cloudflare Workers
+
+# Builds and deploys on Linux.
+#
+# This exists because the OpenNext build cannot run on the developer's Windows
+# machine: it creates directory symlinks while assembling the server bundle, and
+# Windows refuses those with EPERM unless Developer Mode is enabled. Rather than
+# depend on a machine-level setting, the authoritative build happens here.
+#
+# Requires one repository secret: CLOUDFLARE_API_TOKEN, created at
+# dash.cloudflare.com > My Profile > API Tokens using the "Edit Cloudflare
+# Workers" template. No database URL is needed at build time — every route that
+# touches Postgres is force-dynamic, so nothing connects until runtime.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Compatibility engine tests
+        run: npm test
+      - run: npm run typecheck
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Build and deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: deploy
+          preCommands: npx opennextjs-cloudflare build
