@@ -246,6 +246,25 @@ the free allowance, and Cloudflare's $5/month Workers plan if traffic exceeds
 
 ---
 
+## Platform constraints discovered in build
+
+**Cloudflare free-plan Workers are capped at 3 MiB gzipped** (paid: 10 MiB). The
+first deploy carrying Prisma landed at 3,132 KiB — 60 KiB over. Fixed by
+excluding `@vercel/og`, which Next traces into every bundle whether used or not
+and which costs ~1.5 MB in WASM and an embedded font. This project generates no
+OpenGraph images, so none of it was reachable code.
+
+Prisma's own WASM query compiler (3.5 MB raw) stays — the driver adapter needs
+it, and it compresses well. The practical rule: **check `Total Upload … gzip:`
+in the wrangler log after any dependency change.** Adding OG image generation,
+or another WASM-heavy dependency, will require the paid plan.
+
+**Windows Developer Mode must stay on.** The OpenNext build creates directory
+symlinks, which Windows refuses without it. CI on Linux
+(`.github/workflows/deploy.yml`) exists so deploys don't depend on that setting.
+
+---
+
 ## Risks worth naming now
 
 1. **"Full parity, then launch" means no revenue until everything is done.**
