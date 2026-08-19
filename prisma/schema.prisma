@@ -703,8 +703,11 @@ model Frame {
   fdMountType            FdMountType? // R-FD-01
   fdPullDirection        PullDirection? // R-FD-02
   // Rear suspension — all must match a shock exactly (R-SHK-*)
-  shockEyeToEyeMm        Int?
-  shockStrokeMm          Int?
+  /// Decimal for the same reason as RearShock.eyeToEyeMm/strokeMm: R-SHK-01
+  /// allows no tolerance, and half-millimetre strokes are real. A Cannondale
+  /// Habit sourced at 210x47.5 was truncated to 47 while these were Int.
+  shockEyeToEyeMm        Decimal? @db.Decimal(5, 1)
+  shockStrokeMm          Decimal? @db.Decimal(4, 1)
   shockMountType         ShockMountType?
   shockHardwareWidthMm   Int?
   shockBushingDiameterMm Float?
@@ -945,8 +948,12 @@ model RearShock {
   partId String @id
   part   Part   @relation(fields: [partId], references: [id], onDelete: Cascade)
 
-  eyeToEyeMm        Int // R-SHK-01
-  strokeMm          Int
+  /// R-SHK-01 compares these EXACTLY, with no tolerance, so they must be able
+  /// to hold the half-millimetre strokes that really exist (210x52.5,
+  /// 205x62.5, 230x57.5, 210x47.5). As Int, 47.5 silently truncated to 47 --
+  /// which would block the frame's own correct shock and match nothing at all.
+  eyeToEyeMm        Decimal @db.Decimal(5, 1)
+  strokeMm          Decimal @db.Decimal(4, 1)
   mountType         ShockMountType // R-SHK-02
   hardwareWidthMm   Int? // R-SHK-03
   bushingDiameterMm Float?
