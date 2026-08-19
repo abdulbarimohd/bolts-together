@@ -212,21 +212,6 @@ do not repalette the UI toward cyan.
 
 ---
 
-## Phase 5 (superseded) — The 3D hero
-
-React Three Fiber, one stylised bike model, scroll-driven assembly: parts fly in
-and bolt together as the visitor scrolls the hero.
-
-Constraints that keep this from wrecking the site:
-- Lazy-loaded and code-split; it must never block first paint.
-- A static rendered fallback for reduced-motion, mobile and slow connections.
-- Compressed geometry (draco/meshopt) with a hard budget — target under ~1.5 MB.
-- It is explicitly **decorative**. It does not claim to show your actual build,
-  and nothing about it should imply the parts you picked. That separation matters
-  given the project's never-fabricate rule.
-
----
-
 ## Phase 6 — The three sections
 
 **1. Build my bike** — pick a frame, everything else narrows to what genuinely
