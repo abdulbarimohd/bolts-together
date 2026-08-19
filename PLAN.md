@@ -177,7 +177,42 @@ Before any page is built, establish the primitives so the whole site is one syst
 
 ---
 
-## Phase 5 — The 3D hero
+## Phase 5 — The hero
+
+**Approach changed (2026-08-19).** The owner supplied a rendered video, so this is
+no longer a React Three Fiber scene. It is a **scroll-scrubbed frame sequence** —
+the technique Apple use on product pages — which removes WebGL, the 3D model
+sourcing problem, and the R3F bundle entirely.
+
+**Source:** `assets/hero/bike-assembly-source.mp4` — 864x496, 24fps, 97 frames,
+4.04s. An exploded view of a road bike resolving into a complete bike, in a dark
+studio with a cyan grid floor. It is a literal rendering of the site's own
+tagline, which is what makes it the right hero.
+
+**Prepared:** `public/hero/frames/f001-f097.webp`, 2.06 MB total, 22 KB average.
+A frame sequence rather than a seeking video, because mobile Safari is unreliable
+about scrubbing `currentTime`. Static assets do not count against the 3 MiB
+Worker bundle limit.
+
+**Colour decision:** cyan stays as the hero's *environmental* light; safety
+orange `#FF5D2E` stays the UI accent and keeps its semantic duty (fits / blocked /
+needs-an-adapter). The hero is a rendered object, the UI is an instrument — they
+can legitimately hold different colours. Do not grade the video toward orange and
+do not repalette the UI toward cyan.
+
+**Constraints:**
+- 864x496 is small for full-bleed. Contain it in a framed panel at or near native
+  size rather than stretching it — which also suits the blueprint look.
+- Preload the first frame; lazy-load the rest as the section approaches.
+- `prefers-reduced-motion` gets the final assembled frame, static.
+- It stays **decorative** — it must never imply it is showing the parts a rider
+  has actually selected.
+- It shows a *road* bike while the site covers road, gravel and MTB. Another
+  reason to contain rather than full-bleed.
+
+---
+
+## Phase 5 (superseded) — The 3D hero
 
 React Three Fiber, one stylised bike model, scroll-driven assembly: parts fly in
 and bolt together as the visitor scrolls the hero.
