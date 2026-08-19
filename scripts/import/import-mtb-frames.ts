@@ -54,6 +54,12 @@ const slugify = (brand: string, model: string, variant: string, year: number) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
 
+
+/** Drops keys whose value is null, so schema defaults apply instead. */
+function stripNulls(o: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(o).filter(([, v]) => v !== null));
+}
+
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
 });
@@ -137,7 +143,18 @@ async function main() {
           dataSource: p.dataSource as never,
           sourceUrl: p.sourceUrl,
           dataNotes: p.dataNotes ?? null,
-          frame: { create: p.detail as never },
+          // Strip nulls before writing. Two frame fields (hasEyelets,
+          // mulletApproved) are `Boolean @default(false)` and cannot hold
+          // null, so an honest "not stated" from sourcing would fail the
+          // insert. Omitting the key lets the schema default apply. For every
+          // genuinely nullable field, omitting is identical to passing null.
+          //
+          // NOTE: this means an unverified hasEyelets/mulletApproved is stored
+          // as `false` rather than "unknown" -- a real limitation of those two
+          // columns. Both drive advisory rules only (R-MNT-05 info,
+          // R-FRK-04 warning), never a block, so the blast radius is small.
+          // Making them nullable is the correct fix.
+          frame: { create: stripNulls(p.detail) as never },
         },
       });
       frameId = part.id;

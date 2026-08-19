@@ -1,0 +1,73 @@
+[
+  {
+    "brand": "Specialized",
+    "frameName": "Chisel (alloy full-suspension XC, MY2025 generation)",
+    "sourceUrl": "https://media.specialized.com/support/collateral/2025_CHISEL_USER_MANUAL_ENGLISH.pdf",
+    "dataSource": "MANUFACTURER_SPEC",
+    "discipline": "xc",
+    "confidence": "high",
+    "dataNotes": "GENERATION CHECK: specialized.com product page is titled '2025 Chisel' and links the '2025 CHISEL - USER MANUAL'. IMPORTANT: this is the full-suspension alloy Chisel (110mm travel), NOT the earlier Chisel Hardtail - from MY2025 the Chisel is no longer a hardtail and shares Epic 8 kinematics. Any legacy Chisel Hardtail is a different mould, and Specialized publish no frame manual for it. Values from the 2025 Chisel user manual section 4.1 'Component compatibility'. STATED verbatim: material ('D'Aluisio Smartweld M5 Alloy'); BB ('Bottom Bracket Shell 73 mm (BSA threaded)'); rear axle ('Rear Hub Spacing Boost 148' plus 'Rear Thru Axle 148 mm Spacing, 172 mm Length, 12 mm'); hanger ('Derailleur Hanger: SRAM UDH'; 'All bicycle models are UDH compatible'); headset ('Upper Bearing 1-1/8\" 41.8 OD x 30.5 ID', 'Lower Bearing 1.5\" 52 OD x 40 ID', 'Crown Race 39.76'); brake ('Brake Mount: 160 mm Rotor'; 'Min/Max Rear Rotor 160 / 180 with custom Chisel adapter'); max tyre ('Max Rear Tire 29 x 2.4 in'); fork ('Min/Max Fork travel 120 / 130 (evo)'); max chainring ('34t at 52mm chainline / 36t at 55mm chainline' - 36 recorded, valid ONLY at 55mm chainline); seatpost 30.9mm; bottles ('2 bottles, size XS only 1'); shock ('Shock Length / Stroke 190 mm / 40 mm'); chainstay 437mm identical XS-XL. DERIVED: maxTyreWidthMm 61 from '29 x 2.4 in'; POST_MOUNT_160 - the manual states the mount takes a 160mm rotor directly and needs a Specialized adapter for 180mm, and the frame kit is listed as 'Disc PM6 (Direct Mount 160 mm)'; the manual itself never uses the words 'post mount'. LEFT NULL: mulletApproved (no mixed-wheel statement anywhere); iscgStandard (manual lists an 'Optional Chain Guide S2211200002' but never names an ISCG tab standard, and does not say NONE); shockMountType (describes a shock extension and mounting axles but never states eyelet vs trunnion); hasEyelets. EXTRACTION NOTE: Specialized's spec-table PDFs have wrapping cells that shift values by one row under normal text extraction - this initially made a max rear rotor read wrongly. All tables re-extracted with pdftotext -table and cross-checked against text coordinates.",
+    "detail": {
+      "material": "ALUMINIUM",
+      "bbShellStandard": "BSA_73",
+      "bbShellWidthMm": 73,
+      "rearAxleType": "THRU_AXLE_148x12_BOOST",
+      "dropoutType": "UDH",
+      "headsetTaper": "TAPERED_1_5_TO_1_125",
+      "rearBrakeMountType": "POST_MOUNT_160",
+      "maxRotorMmRear": 180,
+      "wheelDiameter": "ISO_622",
+      "maxTyreWidthMm": 61,
+      "maxForkTravelMm": 130,
+      "maxChainringTeeth": 36,
+      "chainstayLengthMm": 437,
+      "seatpostDiameterMm": 30.9,
+      "bottleMounts": 2,
+      "hangerStandard": "UDH",
+      "iscgStandard": null,
+      "shockEyeToEyeMm": 190,
+      "shockStrokeMm": 40,
+      "shockMountType": null
+    },
+    "bikes": [
+      { "model": "Chisel", "year": 2025 },
+      { "model": "Chisel Comp EVO", "year": 2025, "variant": "EVO 130mm fork" }
+    ]
+  },
+  {
+    "brand": "Specialized",
+    "frameName": "Stumpjumper 15 Alloy (M5 alloy, 145mm)",
+    "sourceUrl": "https://media.specialized.com/support/collateral/2025_STUMPJUMPER_ALLOY_USER_MANUAL_ENGLISH.pdf",
+    "dataSource": "MANUFACTURER_SPEC",
+    "discipline": "trail",
+    "confidence": "medium",
+    "dataNotes": "GENERATION CHECK: the frameset page links the '2025 STUMPJUMPER ALLOY - USER MANUAL' and the page's own frame spec string matches the manual, so page and manual are the same generation. ALLOY ONLY - the FACT 11m carbon Stumpjumper 15 is a separate mould and is NOT covered here. Stumpjumper 15 EVO Alloy excluded because a shared mould could not be confirmed. STATED verbatim: material ('M5 alloy chassis and rear-end'); BB ('threaded 73 mm width bottom bracket shell, compatible with any BSA threaded outboard bearing bottom bracket'); rear axle ('12x148mm dropouts'; 'Rear axle 12 mm x 148 mm'); hanger ('SRAM UDH compatible'); headset ('Lower 1.5\" 52 OD x 40 ID x 7', 'Upper 1-1/8\" 41.8 OD x 30.5 ID x 7'); max rotor ('S1-2: 180 / 220; S3-6: 200 / 220'); max tyre ('Rear tire max 29 x 2.4 in'); mullet ('S1 and S2 are ONLY compatible with a mixed wheel setup, S3-S6 are compatible with 29 inch or mixed' - note S1/S2 are mullet-ONLY, so ISO_622 does not apply to those two sizes); fork ('S1: 140/150; S2-6: 150/160' - 160 is the platform max, S1 capped at 150); max chainring 34t at 55mm chainline only; seatpost 34.9mm (collar 38.6mm); bottles 1; ISCG-05 chainguide tabs; shock ('S1: 210 x 52.5; S2-6: 210 x 55' - 55 recorded, S1 is 52.5). DERIVED: maxTyreWidthMm 61 from '29 x 2.4 in'. RETAILER-ONLY, hence medium confidence: rearBrakeMountType - Specialized never state the mount standard in the manual or on the product page. A retailer frame-kit listing gives 'Disc PM7 (Direct Mount 180mm, XS-S), Disc PM8 (Direct Mount 203mm, M-XXL)', whose size split matches the manual's min-rotor split exactly. Recorded as generic POST_MOUNT rather than POST_MOUNT_180 because the native size is SIZE-DEPENDENT. LEFT NULL: chainstayLengthMm (the geometry widget exposes one size at a time; S1 reads 430mm but other sizes could not be confirmed, so no platform value); shockMountType; hasEyelets. NEAR-MISS AVOIDED: a search-result summary asserted this frame 'uses a 200mm rotor native post rear brake mount' attributed to a review; the actual page does not contain the phrase 'post mount' at all. That value was invented by the summariser and was not used.",
+    "detail": {
+      "material": "ALUMINIUM",
+      "bbShellStandard": "BSA_73",
+      "bbShellWidthMm": 73,
+      "rearAxleType": "THRU_AXLE_148x12_BOOST",
+      "dropoutType": "UDH",
+      "headsetTaper": "TAPERED_1_5_TO_1_125",
+      "rearBrakeMountType": "POST_MOUNT",
+      "maxRotorMmRear": 220,
+      "wheelDiameter": "ISO_622",
+      "maxTyreWidthMm": 61,
+      "maxForkTravelMm": 160,
+      "maxChainringTeeth": 34,
+      "chainstayLengthMm": null,
+      "seatpostDiameterMm": 34.9,
+      "bottleMounts": 1,
+      "hangerStandard": "UDH",
+      "iscgStandard": "ISCG_05",
+      "shockEyeToEyeMm": 210,
+      "shockStrokeMm": 55,
+      "shockMountType": null
+    },
+    "bikes": [
+      { "model": "Stumpjumper 15 Alloy Frameset", "year": 2025 },
+      { "model": "Stumpjumper 15 Comp Alloy", "year": 2025 },
+      { "model": "Stumpjumper 15 Alloy", "year": 2026 }
+    ]
+  }
+]
