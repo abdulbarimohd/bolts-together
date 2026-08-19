@@ -21,9 +21,16 @@ export type BrakeMountType =
 
 export type AxleType =
   | 'THRU_AXLE_142x12' | 'THRU_AXLE_148x12_BOOST' | 'THRU_AXLE_157x12_SUPERBOOST'
-  | 'THRU_AXLE_110x15_BOOST' | 'THRU_AXLE_100x15' | 'QUICK_RELEASE_130x9'
-  | 'QUICK_RELEASE_135x9' | 'QUICK_RELEASE_100x9' | 'THRU_AXLE_20x110_DH'
-  | 'THRU_AXLE_150x12_DH';
+  | 'THRU_AXLE_110x15_BOOST' | 'THRU_AXLE_100x15'
+  /** 12mm front thru-axle at 100mm spacing — the standard front axle on nearly
+   *  every modern disc road/gravel bike, and the value on most fork and wheelset
+   *  rows in the catalogue. Do NOT confuse with THRU_AXLE_100x15, which is a
+   *  15mm-diameter MTB standard: pairing those would put a 12mm hub in a 15mm
+   *  fork. Present in the Prisma schema from the start; its absence here forced
+   *  the mapper layer to cast, which is now unnecessary. */
+  | 'THRU_AXLE_100x12'
+  | 'QUICK_RELEASE_130x9' | 'QUICK_RELEASE_100x9' | 'QUICK_RELEASE_135x9'
+  | 'THRU_AXLE_20x110_DH' | 'THRU_AXLE_150x12_DH';
 
 export type AxleThreadPitch = 'M12_x_1_0' | 'M12_x_1_5' | 'M12_x_1_75' | 'M15_x_1_5' | 'NONE_QR';
 

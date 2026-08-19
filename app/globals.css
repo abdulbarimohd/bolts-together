@@ -1,26 +1,582 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ==========================================================================
+   Bolts Together — design tokens
+   --------------------------------------------------------------------------
+   Dark only. There is no light theme and no toggle, so every colour is
+   defined exactly once, here, and nowhere else. If you find yourself typing a
+   hex value anywhere else in the codebase, it belongs in this block instead.
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+   The same values are mirrored as typed TS in `lib/design/tokens.ts` for JS
+   contexts (the 3D hero, canvas work, chart libraries). Change one, change
+   the other.
+   ========================================================================== */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@theme {
+  /* ---- Surfaces -------------------------------------------------------- */
+  /* ink is the page ground; well is for insets and code blocks; panel is a
+     raised card; panel-raised is a panel on top of a panel. */
+  --color-ink: #0a0c10;
+  --color-well: #06080b;
+  --color-panel: #141821;
+  --color-panel-raised: #1b2130;
+
+  /* ---- Lines ----------------------------------------------------------- */
+  /* grid is the blueprint hairline: borders, dividers, the background grid.
+     grid-strong is its hover/active state. */
+  --color-grid: #1e2634;
+  --color-grid-strong: #2c3648;
+
+  /* ---- Text ------------------------------------------------------------ */
+  --color-text: #e6eaf2;
+  --color-text-muted: #97a1b5;
+  --color-text-faint: #5d6879;
+  --color-text-on-accent: #0a0c10;
+
+  /* ---- Accent ---------------------------------------------------------- */
+  /* Safety orange. Used for primary actions, focus and emphasis. */
+  --color-accent: #ff5d2e;
+  --color-accent-hover: #ff7346;
+  --color-focus: #ff5d2e;
+
+  /* ---- Semantic state -------------------------------------------------- */
+  /* THESE ARE NEVER DECORATION. They carry one meaning each and map onto the
+     compatibility engine's severities:
+       state-fits    — no warning at all; the part genuinely fits
+       state-adapter — engine severity `warning`; fixable, names the remedy
+       state-blocked — engine severity `critical`; the part is removed
+     Engine severity `info` is deliberately NOT given a colour — info never
+     blocks and never needs to shout, so it renders in text-muted.
+     `state-adapter` currently shares its value with `--color-accent`; the
+     tokens are kept distinct so the two can diverge without a find/replace. */
+  --color-state-fits: #3ddc97;
+  --color-state-adapter: #ff5d2e;
+  --color-state-blocked: #ff4d4d;
+
+  /* ---- Typography ------------------------------------------------------ */
+  /* One precise grotesk for everything. Mono is reserved for part numbers,
+     measurements and standards — BB86 · 148x12 BOOST · M12x1.0 — never for
+     running prose. */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", Menlo,
+    Consolas, "Liberation Mono", monospace;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Type scale. Deliberate, not a doubling ladder: tight at the reading
+     sizes because this is a dense technical UI, generous at the display end
+     so the marketing surfaces have somewhere to go. Display sizes track
+     tighter; micro labels track wider because they are set in caps. */
+  --text-micro: 0.6875rem; /* 11px — column heads, unit suffixes */
+  --text-micro--line-height: 1.18;
+  --text-micro--letter-spacing: 0.09em;
+
+  --text-xs: 0.75rem; /* 12px — dense table text, captions */
+  --text-xs--line-height: 1.45;
+  --text-xs--letter-spacing: 0.01em;
+
+  --text-sm: 0.8125rem; /* 13px — secondary UI text */
+  --text-sm--line-height: 1.5;
+  --text-sm--letter-spacing: 0.005em;
+
+  --text-base: 0.9375rem; /* 15px — default UI text */
+  --text-base--line-height: 1.6;
+  --text-base--letter-spacing: 0em;
+
+  --text-lg: 1.0625rem; /* 17px — lead paragraphs */
+  --text-lg--line-height: 1.65;
+  --text-lg--letter-spacing: -0.005em;
+
+  --text-xl: 1.25rem; /* 20px — card titles */
+  --text-xl--line-height: 1.4;
+  --text-xl--letter-spacing: -0.01em;
+
+  --text-2xl: 1.5rem; /* 24px — section subheads */
+  --text-2xl--line-height: 1.3;
+  --text-2xl--letter-spacing: -0.015em;
+
+  --text-3xl: 1.875rem; /* 30px — section heads */
+  --text-3xl--line-height: 1.22;
+  --text-3xl--letter-spacing: -0.02em;
+
+  --text-4xl: 2.5rem; /* 40px */
+  --text-4xl--line-height: 1.12;
+  --text-4xl--letter-spacing: -0.025em;
+
+  --text-5xl: 3.25rem; /* 52px */
+  --text-5xl--line-height: 1.06;
+  --text-5xl--letter-spacing: -0.03em;
+
+  --text-6xl: 4.25rem; /* 68px — hero only */
+  --text-6xl--line-height: 1;
+  --text-6xl--letter-spacing: -0.035em;
+
+  --tracking-tighter: -0.03em;
+  --tracking-tight: -0.015em;
+  --tracking-normal: 0em;
+  --tracking-wide: 0.04em;
+  --tracking-caps: 0.09em;
+
+  /* ---- Spacing --------------------------------------------------------- */
+  /* 4px base. Tailwind derives the whole numeric scale from this, so
+     `p-4` is 16px, `gap-6` is 24px, and so on. */
+  --spacing: 0.25rem;
+
+  /* ---- Radii ----------------------------------------------------------- */
+  /* Blueprint drawings have corners, not pills. Everything is tight; `full`
+     exists only for status pills and avatars. */
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 18px;
+
+  /* ---- Elevation ------------------------------------------------------- */
+  --shadow-panel: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
+  --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.35), 0 18px 40px -18px rgb(0 0 0 / 0.8);
+  --shadow-glow-accent: 0 0 0 1px rgb(255 93 46 / 0.35),
+    0 12px 32px -14px rgb(255 93 46 / 0.55);
+  --shadow-inset-line: inset 0 1px 0 0 rgb(255 255 255 / 0.04);
+
+  /* ---- Motion: easing -------------------------------------------------- */
+  /* Four curves, and only four. Anything that moves picks one of these. */
+  --ease-entrance: cubic-bezier(0.16, 1, 0.3, 1); /* reveals, enters */
+  --ease-exit: cubic-bezier(0.7, 0, 0.84, 0); /* leaves, collapses */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1); /* hovers, small state */
+  --ease-overshoot: cubic-bezier(0.34, 1.4, 0.64, 1); /* lift, pop-in */
+
+  /* ---- Motion: duration ------------------------------------------------ */
+  /* Tailwind has no --duration-* theme namespace, so these generate no
+     utilities — reference them as var(--duration-base), or with an arbitrary
+     value: duration-[var(--duration-base)]. */
+  --duration-instant: 90ms;
+  --duration-fast: 160ms;
+  --duration-base: 280ms;
+  --duration-slow: 520ms;
+  --duration-slower: 820ms;
+  --duration-ambient: 14s; /* the continuous, never-ending layer */
+
+  /* Stagger step used by <Stagger>. One value so every staggered list in the
+     app has the same rhythm. */
+  --stagger-step: 70ms;
+
+  /* Distance a <Reveal> travels. One value so every reveal in the app moves
+     the same amount. */
+  --reveal-distance: 18px;
+
+  /* ---- Motion: ambient keyframes --------------------------------------- */
+  --animate-drift: drift var(--duration-ambient) linear infinite;
+  --animate-breathe: breathe 4.5s var(--ease-standard) infinite;
+  --animate-scan: scan 9s linear infinite;
+  --animate-trace: trace 2.4s var(--ease-standard) infinite;
+
+  @keyframes drift {
+    from {
+      background-position: 0 0;
+    }
+    to {
+      background-position: var(--grid-size, 32px) var(--grid-size, 32px);
+    }
+  }
+
+  @keyframes breathe {
+    0%,
+    100% {
+      opacity: 0.55;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.35);
+    }
+  }
+
+  /* Animates `top`, not `translateY`: a percentage translate resolves against
+     the element's own height, which for a 1px rule is 1px. `top` resolves
+     against the positioned ancestor, which is what a sweep actually needs. */
+  @keyframes scan {
+    0% {
+      top: 0%;
+      opacity: 0;
+    }
+    12% {
+      opacity: 1;
+    }
+    88% {
+      opacity: 1;
+    }
+    100% {
+      top: 100%;
+      opacity: 0;
+    }
+  }
+
+  @keyframes trace {
+    0% {
+      transform: scaleX(0);
+      transform-origin: left;
+    }
+    45% {
+      transform: scaleX(1);
+      transform-origin: left;
+    }
+    55% {
+      transform: scaleX(1);
+      transform-origin: right;
+    }
+    100% {
+      transform: scaleX(0);
+      transform-origin: right;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+@layer base {
+  html {
+    /* `clip` rather than `hidden` so position: sticky still works. Wide
+       content scrolls inside its own .bt-scroll-x container, never the page. */
+    overflow-x: clip;
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    color-scheme: dark;
+  }
+
+  body {
+    overflow-x: clip;
+    background-color: var(--color-ink);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Contextual alternates + kerning on; lining figures so digits never
+       drop below the baseline in a technical readout. */
+    font-feature-settings: "kern" 1, "calt" 1, "lnum" 1;
+  }
+
+  /* Digits that sit in a column must never re-flow as values change. */
+  table,
+  [data-tabular] {
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  code,
+  kbd,
+  samp,
+  pre {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* One focus treatment for the entire application. Every interactive
+     element gets it; nothing opts out. */
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  /* Suppress the default ring only where we draw our own with the same token. */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  ::selection {
+    background-color: color-mix(in oklab, var(--color-accent) 35%, transparent);
+    color: var(--color-text);
+  }
+
+  * {
+    scrollbar-color: var(--color-grid-strong) transparent;
+    scrollbar-width: thin;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--color-grid-strong);
+    border: 3px solid var(--color-ink);
+    border-radius: var(--radius-2xl);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-text-faint);
+  }
+
+  /* --------------------------------------------------------------------
+     Reduced motion — the global backstop.
+     Every primitive also handles this itself in JS, because a primitive
+     that only relies on this rule would still run its IntersectionObserver
+     and still mount its pointer listeners. Belt and braces: this rule
+     guarantees that anything anyone adds later is covered by default.
+     -------------------------------------------------------------------- */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 1ms !important;
+      animation-iteration-count: 1 !important;
+      animation-delay: 0ms !important;
+      transition-duration: 1ms !important;
+      transition-delay: 0ms !important;
+    }
+
+    html {
+      scroll-behavior: auto;
+    }
+  }
+}
+
+/* ==========================================================================
+   Shared primitive classes
+   --------------------------------------------------------------------------
+   These exist so that the motion components and the UI components apply
+   literally the same CSS, rather than each re-implementing "a hover lift".
+   ========================================================================== */
+
+@layer components {
+  /* ---- Reveal ---------------------------------------------------------- */
+  /* Set by <Reveal> and by <Stagger> on each of its children. Hidden until
+     the element has been seen; --reveal-delay is what <Stagger> varies. */
+  [data-reveal] {
+    opacity: 0;
+    transform: translate3d(0, var(--reveal-distance), 0);
+    transition:
+      opacity var(--duration-slow) var(--ease-entrance),
+      transform var(--duration-slow) var(--ease-entrance);
+    transition-delay: var(--reveal-delay, 0ms);
+    will-change: opacity, transform;
+  }
+
+  [data-reveal="shown"] {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    will-change: auto;
+  }
+
+  /* If the observer never runs — reduced motion, no JS, an old browser —
+     the content must still be readable. Never trade legibility for effect. */
+  @media (prefers-reduced-motion: reduce) {
+    [data-reveal] {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  }
+
+  /* ---- Stagger --------------------------------------------------------- */
+  /* <Stagger> puts one observer on the container and lets CSS do the rest:
+     every direct child animates on the same transition, offset by
+     --stagger-step. No wrapper elements and no cloneElement, so the children
+     stay exactly where the layout put them.
+
+     The per-child delay is enumerated to 16. That is a deliberate cap: a
+     stagger longer than about a second reads as the page being slow, not as
+     craft. Children past the sixteenth all arrive on the sixteenth beat. */
+  [data-stagger] > * {
+    opacity: 0;
+    transform: translate3d(0, var(--reveal-distance), 0);
+    transition:
+      opacity var(--duration-slow) var(--ease-entrance),
+      transform var(--duration-slow) var(--ease-entrance);
+    transition-delay: calc(var(--stagger-base, 0ms) + 15 * var(--stagger-step));
+    will-change: opacity, transform;
+  }
+
+  [data-stagger] > *:nth-child(1) {
+    transition-delay: calc(var(--stagger-base, 0ms) + 0 * var(--stagger-step));
+  }
+  [data-stagger] > *:nth-child(2) {
+    transition-delay: calc(var(--stagger-base, 0ms) + 1 * var(--stagger-step));
+  }
+  [data-stagger] > *:nth-child(3) {
+    transition-delay: calc(var(--stagger-base, 0ms) + 2 * var(--stagger-step));
+  }
+  [data-stagger] > *:nth-child(4) {
+    transition-delay: calc(var(--stagger-base, 0ms) + 3 * var(--stagger-step));
+  }
+  [data-stagger] > *:nth-child(5) {
+    transition-delay: calc(var(--stagger-base, 0ms) + 4 * var(--stagger-step));
+  }
+  [data-stagger] > *:nth-child(6) {
+    transition-delay: calc(var(--stagger-base, 0ms) + 5 * var(--stagger-step));
+  }
+  [data-stagger] > *:nth-child(7) {
+    transition-delay: calc(var(--stagger-base, 0ms) + 6 * var(--stagger-step));
+  }
+  [data-stagger] > *:nth-child(8) {
+    transition-delay: calc(var(--stagger-base, 0ms) + 7 * var(--stagger-step));
+  }
+  [data-stagger] > *:nth-child(9) {
+    transition-delay: calc(var(--stagger-base, 0ms) + 8 * var(--stagger-step));
+  }
+  [data-stagger] > *:nth-child(10) {
+    transition-delay: calc(var(--stagger-base, 0ms) + 9 * var(--stagger-step));
+  }
+  [data-stagger] > *:nth-child(11) {
+    transition-delay: calc(var(--stagger-base, 0ms) + 10 * var(--stagger-step));
+  }
+  [data-stagger] > *:nth-child(12) {
+    transition-delay: calc(var(--stagger-base, 0ms) + 11 * var(--stagger-step));
+  }
+  [data-stagger] > *:nth-child(13) {
+    transition-delay: calc(var(--stagger-base, 0ms) + 12 * var(--stagger-step));
+  }
+  [data-stagger] > *:nth-child(14) {
+    transition-delay: calc(var(--stagger-base, 0ms) + 13 * var(--stagger-step));
+  }
+  [data-stagger] > *:nth-child(15) {
+    transition-delay: calc(var(--stagger-base, 0ms) + 14 * var(--stagger-step));
+  }
+
+  [data-stagger="shown"] > * {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    will-change: auto;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-stagger] > * {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  }
+
+  /* ---- Hover lift ------------------------------------------------------ */
+  /* The single hover treatment used by every card-like surface in the app.
+     <Hover> applies it; <Card interactive> applies it; nothing else invents
+     its own. */
+  .bt-hover {
+    position: relative;
+    transition:
+      transform var(--duration-base) var(--ease-overshoot),
+      border-color var(--duration-fast) var(--ease-standard),
+      box-shadow var(--duration-base) var(--ease-standard),
+      background-color var(--duration-fast) var(--ease-standard);
+  }
+
+  .bt-hover:hover,
+  .bt-hover:focus-visible,
+  .bt-hover:focus-within {
+    border-color: var(--color-grid-strong);
+    box-shadow: var(--shadow-lift);
+  }
+
+  .bt-hover-lift:hover,
+  .bt-hover-lift:focus-visible,
+  .bt-hover-lift:focus-within {
+    transform: translate3d(0, -3px, 0);
+  }
+
+  .bt-hover-glow:hover,
+  .bt-hover-glow:focus-visible,
+  .bt-hover-glow:focus-within {
+    border-color: color-mix(in oklab, var(--color-accent) 45%, transparent);
+    box-shadow: var(--shadow-lift), var(--shadow-glow-accent);
+  }
+
+  /* Pointer-tracked spotlight. --pointer-x/--pointer-y are written by
+     <Hover spotlight>; with no JS they stay unset and the layer sits
+     harmlessly at the centre, invisible at 0 opacity. */
+  .bt-hover-spotlight::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--duration-base) var(--ease-standard);
+    background: radial-gradient(
+      220px circle at var(--pointer-x, 50%) var(--pointer-y, 50%),
+      color-mix(in oklab, var(--color-accent) 14%, transparent),
+      transparent 70%
+    );
+  }
+
+  .bt-hover-spotlight:hover::before,
+  .bt-hover-spotlight:focus-within::before {
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    /* Motion goes; the state change does not. A hover that becomes invisible
+       under reduced motion is a regression, not an accommodation. */
+    .bt-hover-lift:hover,
+    .bt-hover-lift:focus-visible,
+    .bt-hover-lift:focus-within {
+      transform: none;
+    }
+
+    .bt-hover-spotlight::before {
+      display: none;
+    }
+  }
+
+  /* ---- Route transition ------------------------------------------------ */
+  .bt-route-enter {
+    animation: bt-route-in var(--duration-slow) var(--ease-entrance) both;
+  }
+
+  @keyframes bt-route-in {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 10px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bt-route-enter {
+      animation: none;
+    }
+  }
+
+  /* ---- Blueprint grid -------------------------------------------------- */
+  /* The house background texture. --grid-size controls pitch. */
+  .bt-blueprint {
+    background-image:
+      linear-gradient(to right, var(--color-grid) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--color-grid) 1px, transparent 1px);
+    background-size: var(--grid-size, 32px) var(--grid-size, 32px);
+  }
+
+  /* ---- Horizontal scroll container ------------------------------------- */
+  /* Wide content — spec tables, part rows — scrolls in here. The page never
+     scrolls sideways. */
+  .bt-scroll-x {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
 }

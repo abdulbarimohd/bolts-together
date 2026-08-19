@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Build output and generated code. All three are already in .gitignore;
+    // linting them buries real findings under thousands of results from code
+    // nobody wrote and nobody can fix.
+    ".open-next/**",
+    "lib/generated/**",
+    "scratchpad/**",
   ]),
 ]);
 
