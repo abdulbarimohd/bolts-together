@@ -236,6 +236,18 @@ enum VendorName {
   EVANS_CYCLES
   SIGMA_SPORTS
   MERLIN_CYCLES
+  /// The one approved affiliate relationship at time of writing (Awin).
+  /// Added so the affiliate layer's Retailer can point at a real Vendor row
+  /// and keep writing the append-only Price history.
+  ///
+  /// Note the tension this enum creates with the "adding a network or shop is
+  /// configuration, not code" goal: a brand-new *affiliate* retailer needs no
+  /// schema change (Retailer.slug is a free string), but linking one to the
+  /// pre-existing Vendor/Price history does, because Vendor.name is closed.
+  /// Left closed deliberately rather than widened to String -- Vendor is the
+  /// small, curated set the price-history and stock-alert features query by
+  /// name, and the affiliate layer works fine with Retailer.vendorId null.
+  RIBBLE_CYCLES
 }
 
 enum Currency {
@@ -496,6 +508,11 @@ model BikeModel {
 
   parts  BikeModelPart[]
   builds Build[]
+  /// Affiliate offers for the complete bike as sold. This is the half of the
+  /// affiliate layer that works even if a retailer's feed turns out to carry
+  /// complete bikes only -- see the Phase 7 note at the foot of this file.
+  retailerOffers     RetailerOffer[]
+  productIdentifiers ProductIdentifier[]
 
   @@unique([brand, model, year, variant])
   @@index([brand])
@@ -617,6 +634,13 @@ model Part {
   buildParts     BuildPart[]
   bikeModelParts BikeModelPart[]
   stockAlerts    StockAlert[]
+  /// Live affiliate offers pointing at this part. See the affiliate layer at
+  /// the foot of this file: an offer may carry price, stock and imagery, and
+  /// may never write any spec field on this row.
+  retailerOffers     RetailerOffer[]
+  /// EANs, MPNs and the like. What makes an offer match evidence-based
+  /// rather than a fuzzy name guess.
+  productIdentifiers ProductIdentifier[]
 
   // Frame-kit bundling (item 6) -- see PartBundle below. Two relations
   // to the same model, so both ends need their own @relation name:
@@ -1086,6 +1110,10 @@ model Vendor {
 
   prices      Price[]
   stockAlerts StockAlert[]
+  /// A vendor may be reachable through more than one affiliate network (the
+  /// same shop can run programmes on Awin and Impact at once), so this is a
+  /// list, not a 1:1.
+  retailers   Retailer[]
 }
 
 model Price {
@@ -1132,4 +1160,434 @@ model StockAlert {
   @@index([userId])
   @@index([partId])
   @@index([vendorId])
+}
+
+// ------------------------------------------------------------
+// AFFILIATE LAYER (Phase 7)
+//
+// The site earns entirely through affiliate commission, so this layer
+// is load-bearing -- but it is also the layer most likely to poison the
+// catalogue if it is allowed too much authority. Two rules shape every
+// model below.
+//
+// 1. RETAILER-AGNOSTIC. Adding a shop must be data, and adding a network
+//    must be at most one adapter file. Nothing here names Awin: the
+//    network's identity is a string key looked up in the adapter registry
+//    (lib/affiliate/registry.ts), and its per-merchant identifiers
+//    (Awin's `awinmid`, someone else's advertiser slug) are opaque
+//    strings. Credentials live in env vars; the database stores only the
+//    *name* of the variable, never its value.
+//
+// 2. FEED DATA IS LOW-TRUST. A feed row is DataSource.DATA_FEED, which
+//    sits below MANUFACTURER_SPEC. It may supply price, stock and
+//    imagery. It may never supply or overwrite a compatibility-relevant
+//    spec. That is why RetailerOffer holds the feed's own words in its
+//    own columns (title, brandName, ean, mpn) instead of writing them
+//    onto Part: a retailer describing a hub as "148mm" in free text must
+//    never become a Wheelset spacing value. The compatibility engine does
+//    not read this table at all, and must not.
+//
+// UNRESOLVED AT TIME OF WRITING (the Phase 7 blocker in PLAN.md): whether
+// Ribble's Awin feed carries individual components or complete bikes only.
+// The schema is deliberately indifferent to the answer. RetailerOffer can
+// point at a Part *or* a BikeModel, and RetailerFeed.scope records which a
+// given feed actually turned out to contain. If the answer is bikes-only,
+// nothing here changes -- component offers simply stay empty and the
+// per-part buy button has nothing to render, which the offer helpers
+// already treat as a normal state rather than an error.
+// ------------------------------------------------------------
+
+/// What a given feed was found to contain. Set from observation after a
+/// first ingest, not from the network's marketing description -- defaults
+/// to UNKNOWN precisely so an unchecked feed can't be described as
+/// something it isn't.
+enum FeedProductScope {
+  /// Individual components: groupsets, wheels, finishing kit.
+  COMPONENT
+  /// Complete bikes as sold.
+  COMPLETE_BIKE
+  /// Both, in one feed.
+  MIXED
+  /// Not yet inspected.
+  UNKNOWN
+}
+
+/// Stock state as the feed reports it. UNKNOWN is a real, common answer
+/// -- plenty of feeds omit stock entirely -- and is stored rather than
+/// being optimistically rounded to IN_STOCK, which would send a rider to
+/// a sold-out page.
+enum OfferAvailability {
+  IN_STOCK
+  OUT_OF_STOCK
+  PRE_ORDER
+  BACK_ORDER
+  DISCONTINUED
+  UNKNOWN
+}
+
+/// How an offer got attached to a catalogue Part or BikeModel. Recorded
+/// because a wrong match is the affiliate layer's version of a wrong spec:
+/// it shows a price and a buy button for the wrong product, and nothing in
+/// the UI would reveal it. EAN/GTIN/MPN matches are evidence; a fuzzy
+/// name match is not, which is why there is no FUZZY_NAME value.
+enum OfferMatchMethod {
+  /// Unmatched. The offer is kept (re-matching later is cheap, re-downloading
+  /// is not) but must never be shown against any part.
+  NONE
+  EAN
+  GTIN
+  MPN
+  /// The retailer's own SKU, mapped by hand in a lookup table.
+  MERCHANT_SKU
+  /// A human matched it and said so.
+  MANUAL
+}
+
+enum FeedSyncStatus {
+  SUCCESS
+  /// Ran, wrote some rows, but hit rows it could not parse.
+  PARTIAL
+  FAILED
+  /// Credentials absent. Expected, not an error, until Awin issues them.
+  SKIPPED_NO_CREDENTIALS
+}
+
+/// An affiliate network: Awin today, Impact or Partnerize later.
+model AffiliateNetwork {
+  id String @id @default(uuid())
+
+  /// Stable machine key, e.g. "awin". Free string rather than an enum on
+  /// purpose: an enum would make adding a network a migration, and the
+  /// stated goal is that adding one is configuration.
+  key  String @unique
+  name String
+
+  /// Which adapter implementation drives this network. Normally equal to
+  /// `key`; kept separate so a second programme hosted on the same network
+  /// technology can reuse an existing adapter without inventing a new one.
+  adapterKey String
+
+  /// Names of the environment variables holding this network's secrets --
+  /// the names only. Values are never stored in the database, never in the
+  /// repo, and are read at runtime by lib/affiliate/credentials.ts.
+  publisherIdEnvVar String?
+  apiKeyEnvVar      String?
+
+  homepageUrl String?
+  enabled     Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  retailers Retailer[]
+
+  @@index([enabled])
+}
+
+/// One shop, as reached through one network. The same shop on two networks
+/// is two rows, because the tracking identifiers and commission differ.
+model Retailer {
+  id String @id @default(uuid())
+
+  slug        String @unique
+  displayName String
+
+  networkId String
+  network   AffiliateNetwork @relation(fields: [networkId], references: [id], onDelete: Restrict)
+
+  /// The network's identifier for this merchant. Awin calls it the
+  /// advertiser ID and puts it in `awinmid`; other networks use other
+  /// names. Opaque here on purpose.
+  advertiserId String
+
+  siteUrl String
+
+  /// Optional link to the pre-existing Vendor row, so this retailer's
+  /// prices keep flowing into the append-only Price history rather than
+  /// starting a parallel one. Nullable because Vendor.name is a closed
+  /// enum and not every affiliate retailer will have (or need) a row in
+  /// it; with no Vendor the offer still works, it just keeps no history.
+  vendorId String?
+  vendor   Vendor? @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+
+  currency Currency @default(GBP)
+
+  /// Hostnames this retailer's product URLs are expected to be on, e.g.
+  /// ["ribble.co.uk", "www.ribble.co.uk"]. A deep link is only built for a
+  /// destination on this list. Guards against a malformed or tampered feed
+  /// row turning our tracked link into an open redirect pointed anywhere.
+  /// Empty means "unchecked" -- see the deep-link builder, which refuses
+  /// rather than assuming.
+  linkDomains String[] @default([])
+
+  /// Commission never influences compatibility results, and nothing reads
+  /// this field to rank or filter parts. It is recorded for revenue
+  /// reporting only. See lib/affiliate/disclosure.ts.
+  commissionNotes String?
+
+  enabled Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  feeds    RetailerFeed[]
+  offers   RetailerOffer[]
+  syncRuns FeedSyncRun[]
+  /// Retailer-scoped SKU mappings, for the case where a product carries no
+  /// manufacturer identifier and a human has mapped it by hand.
+  productIdentifiers ProductIdentifier[]
+
+  @@unique([networkId, advertiserId])
+  @@index([enabled])
+  @@index([vendorId])
+}
+
+/// One product feed belonging to a retailer. Separate from Retailer
+/// because a merchant commonly publishes several -- and because if Ribble
+/// turns out to publish a bikes feed and a components feed separately,
+/// that is two rows here and no code change anywhere.
+model RetailerFeed {
+  id String @id @default(uuid())
+
+  retailerId String
+  retailer   Retailer @relation(fields: [retailerId], references: [id], onDelete: Cascade)
+
+  /// The network's feed identifier. Awin calls this the feed id (`fid`).
+  externalFeedId String
+  label          String?
+
+  /// What this feed was observed to contain. THE Phase 7 blocker is
+  /// answered by setting this field, not by editing code.
+  scope FeedProductScope @default(UNKNOWN)
+
+  /// ISO language of the feed, and the currency its prices are quoted in.
+  /// A feed in any currency other than GBP is refused at ingest rather
+  /// than converted -- an invented exchange rate is fabricated data, and
+  /// the prices here are meant to be the exact figure the rider will pay.
+  language String   @default("en")
+  currency Currency @default(GBP)
+
+  /// Whether this feed's prices already include VAT.
+  ///
+  /// Not a detail worth defaulting quietly. Awin's feed specification
+  /// defines its price column only as "price online" and carries no VAT or
+  /// tax field at all, so VAT-inclusivity is not something the network
+  /// tells us -- it follows from the merchant being a UK consumer retailer,
+  /// whose displayed prices must include VAT under the Price Marking Order.
+  /// True by default because that is the case for every retailer in scope,
+  /// and settable per feed so a trade or export feed can say otherwise
+  /// instead of quietly under-quoting a rider by 20%.
+  pricesIncludeVat Boolean @default(true)
+
+  enabled Boolean @default(true)
+
+  lastSyncedAt DateTime?
+  lastRowCount Int?
+
+  offers   RetailerOffer[]
+  syncRuns FeedSyncRun[]
+
+  @@unique([retailerId, externalFeedId])
+  @@index([enabled])
+}
+
+/// A live offer: one retailer's current price and stock for one product,
+/// plus the tracked link that earns the commission.
+///
+/// Current state, not history. Price *history* stays in the existing
+/// append-only Price model, which ingest writes to only when a figure
+/// actually changes -- a daily feed run that appended unconditionally
+/// would add a row per product per day forever and make the history
+/// useless for spotting a real price move.
+model RetailerOffer {
+  id String @id @default(uuid())
+
+  retailerId String
+  retailer   Retailer @relation(fields: [retailerId], references: [id], onDelete: Cascade)
+
+  feedId String?
+  feed   RetailerFeed? @relation(fields: [feedId], references: [id], onDelete: SetNull)
+
+  /// The retailer's own stable product identifier, from the feed. This is
+  /// the idempotency key: re-running an ingest updates rows, never
+  /// duplicates them.
+  externalId String
+
+  // ---- The feed's own description of the product ----
+  // Held here, never copied onto Part. A retailer's product copy is
+  // marketing text; Part's fields are compatibility facts.
+  title        String
+  brandName    String?
+  ean          String?
+  mpn          String?
+  gtin         String?
+  categoryPath String?
+
+  /// Licensed product imagery from the feed. May be used on the site;
+  /// may be copied to Part.imageUrl only where Part has none.
+  imageUrl String?
+
+  /// The merchant's plain, untracked product URL, exactly as the feed gave
+  /// it. Stored raw so the tracked link can be rebuilt from scratch if the
+  /// network changes its link format or the publisher ID changes.
+  productUrl String
+
+  /// The tracked deep link. Nullable: before credentials exist there is no
+  /// publisher ID to put in it, and a link built without one earns nothing
+  /// while looking like it works. Null means "not clickable yet", which
+  /// the UI helpers report honestly.
+  deepLinkUrl String?
+
+  // ---- Money. UK, VAT-inclusive, integer pence. ----
+  pricePence    Int
+  /// The retailer's own "was" / RRP figure where the feed supplies one.
+  /// Never derived, never inferred from a previous price.
+  wasPricePence Int?
+  deliveryPence Int?
+  currency      Currency @default(GBP)
+  includesVat   Boolean  @default(true)
+
+  availability  OfferAvailability @default(UNKNOWN)
+  stockQuantity Int?
+
+  // ---- Link to the catalogue ----
+  // Exactly one of partId / bikeModelId is set on a matched offer, and
+  // both are null on an unmatched one. Postgres could express that as a
+  // CHECK constraint but Prisma's schema language cannot, so it is
+  // enforced in lib/affiliate/ingest.ts and stated here.
+  partId String?
+  part   Part?   @relation(fields: [partId], references: [id], onDelete: Cascade)
+
+  bikeModelId String?
+  bikeModel   BikeModel? @relation(fields: [bikeModelId], references: [id], onDelete: Cascade)
+
+  matchMethod OfferMatchMethod @default(NONE)
+  matchedAt   DateTime?
+  /// Which identifier matched, and anything shaky about it. The audit
+  /// trail for a claim the rider is about to spend money on.
+  matchNotes  String?
+
+  // ---- Freshness ----
+  firstSeenAt    DateTime  @default(now())
+  /// Last feed run in which this product still appeared. A row that stops
+  /// appearing is stale, not deleted: deleting would lose the price
+  /// history's anchor, and "last seen 9 days ago" is more honest to show
+  /// than silence.
+  lastSeenAt     DateTime  @default(now())
+  /// Last time the price actually moved. Null until a second, different
+  /// price is seen.
+  priceChangedAt DateTime?
+
+  @@unique([retailerId, externalId])
+  @@index([partId, availability])
+  @@index([bikeModelId])
+  @@index([retailerId, lastSeenAt])
+  @@index([ean])
+  @@index([mpn])
+  @@index([matchMethod])
+}
+
+/// One ingest run. Kept because a feed that quietly stops updating looks
+/// exactly like a feed with no price changes, and the difference is a site
+/// showing month-old prices.
+model FeedSyncRun {
+  id String @id @default(uuid())
+
+  retailerId String
+  retailer   Retailer @relation(fields: [retailerId], references: [id], onDelete: Cascade)
+
+  feedId String?
+  feed   RetailerFeed? @relation(fields: [feedId], references: [id], onDelete: SetNull)
+
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  status     FeedSyncStatus
+
+  rowsRead Int @default(0)
+  /// Rows the ingest refused: wrong currency, unparseable price, no stable
+  /// id, destination off the retailer's own domains.
+  rowsSkipped     Int @default(0)
+  offersUpserted  Int @default(0)
+  offersMatched   Int @default(0)
+  offersUnmatched Int @default(0)
+  /// Price rows appended, i.e. how many prices genuinely changed.
+  pricesRecorded  Int @default(0)
+
+  /// Human-readable outcome, including the reason for a skip or failure.
+  message String?
+
+  @@index([retailerId, startedAt])
+  @@index([status])
+}
+
+/// Kinds of manufacturer/retailer identifier a catalogue row can carry.
+enum ProductIdentifierKind {
+  /// 13-digit European Article Number, as printed on the box.
+  EAN
+  /// GS1 GTIN (12/13/14 digit). Stored digits-only.
+  GTIN
+  UPC
+  /// Manufacturer part number, e.g. Shimano's "RD-R7150".
+  MPN
+  /// One retailer's own SKU. Only meaningful with `retailerId` set.
+  MERCHANT_SKU
+}
+
+/// A manufacturer or retailer identifier for a catalogue row.
+///
+/// This table exists so that matching an affiliate feed row to a part is
+/// *evidence-based*. Without it the only way to connect "Shimano Ultegra
+/// RD-R8150 Rear Derailleur 12 Speed" in a feed to a catalogue part would
+/// be fuzzy name matching, which gets the wrong cage length or the wrong
+/// generation often enough to put a buy button on the wrong product. The
+/// governing rule here is the same one that governs specs: match on a
+/// published identifier or abstain.
+///
+/// Separate rows rather than columns on Part because one part legitimately
+/// has many identifiers (an EAN per colour and size, an MPN plus a GTIN),
+/// and because each identifier needs its own provenance -- an EAN read off
+/// a manufacturer's price list is not the same claim as one scraped from a
+/// listing.
+///
+/// Feed ingest never writes to this table. It reads it. An identifier
+/// asserted by the retailer whose price we are about to show would make
+/// the match self-certifying.
+model ProductIdentifier {
+  id String @id @default(uuid())
+
+  // Exactly one of partId / bikeModelId is set, same convention as
+  // RetailerOffer. Prisma cannot express the check; ingest and the seed
+  // scripts enforce it.
+  partId String?
+  part   Part?   @relation(fields: [partId], references: [id], onDelete: Cascade)
+
+  bikeModelId String?
+  bikeModel   BikeModel? @relation(fields: [bikeModelId], references: [id], onDelete: Cascade)
+
+  kind ProductIdentifierKind
+
+  /// Normalised form: digits only for EAN/GTIN/UPC, uppercased and
+  /// stripped of spaces and hyphens for MPN and SKU. Normalising on the
+  /// way in means the lookup is an exact index hit, not a scan with
+  /// per-row cleanup.
+  value String
+
+  /// Set only for MERCHANT_SKU, which is meaningless without knowing whose
+  /// SKU it is.
+  retailerId String?
+  retailer   Retailer? @relation(fields: [retailerId], references: [id], onDelete: Cascade)
+
+  // ---- Provenance, same contract as Part ----
+  dataSource DataSource @default(UNVERIFIED)
+  sourceUrl  String?
+  dataNotes  String?
+  verifiedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@unique([kind, value, partId, bikeModelId, retailerId])
+  /// The match lookup: given a feed row's EAN, find the catalogue row.
+  @@index([kind, value])
+  @@index([partId])
+  @@index([bikeModelId])
 }

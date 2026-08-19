@@ -17,7 +17,10 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "// affiliate": "ingest is safe to run before credentials exist -- it reports what is missing and exits 0",
+    "affiliate:check": "tsx scripts/affiliate/ingest-feed.ts --check",
+    "affiliate:ingest": "tsx scripts/affiliate/ingest-feed.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
