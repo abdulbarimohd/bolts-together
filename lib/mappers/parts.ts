@@ -138,8 +138,12 @@ export function mapFrame(part: PartIdentityRow, row: FrameModel): Required<Frame
     hasEyelets: row.hasEyelets,
     fdMountType: row.fdMountType,
     fdPullDirection: row.fdPullDirection,
-    shockEyeToEyeMm: row.shockEyeToEyeMm,
-    shockStrokeMm: row.shockStrokeMm,
+    // Decimal, not Int: R-SHK-01 compares these exactly with no tolerance, and
+    // real strokes include half-millimetres (210x47.5, 210x52.5, 230x57.5).
+    // As Int they were silently truncated, which would block a frame's own
+    // correct shock and match nothing at all.
+    shockEyeToEyeMm: decimalToNumber(row.shockEyeToEyeMm),
+    shockStrokeMm: decimalToNumber(row.shockStrokeMm),
     shockMountType: row.shockMountType,
     shockHardwareWidthMm: row.shockHardwareWidthMm,
     shockBushingDiameterMm: row.shockBushingDiameterMm,
@@ -393,8 +397,12 @@ export function mapHeadset(part: PartIdentityRow, row: HeadsetModel): Required<H
 export function mapRearShock(part: PartIdentityRow, row: RearShockModel): Required<RearShock> {
   return {
     ...identity(part),
-    eyeToEyeMm: row.eyeToEyeMm,
-    strokeMm: row.strokeMm,
+    // Decimal for the same reason as Frame.shockStrokeMm above. Non-null in the
+    // schema, so a null here means the column is genuinely unreadable rather
+    // than unpublished -- decimalToNumber throws instead of degrading, because
+    // silently abstaining on a shock size is exactly what R-SHK-01 must never do.
+    eyeToEyeMm: decimalToNumber(row.eyeToEyeMm) as number,
+    strokeMm: decimalToNumber(row.strokeMm) as number,
     mountType: row.mountType,
     hardwareWidthMm: row.hardwareWidthMm,
     bushingDiameterMm: row.bushingDiameterMm,
