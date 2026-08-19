@@ -1,0 +1,8 @@
+- [Bolts Together rebuild](bolts-together-rebuild.md) — the current project: ground-up rebuild of Build My Bike, with every stack and design decision locked in
+- [Build My Bike project](build-my-bike-project.md) — the predecessor: UK bike build/compatibility tool, where it lives and how it's hosted
+- [Bolts Together infra](bolts-together-infra.md) — live Neon project IDs, the direct-vs-pooled connection split, and the Prisma 7 gotchas that cost time
+- [Awin Phase 7 reminder](awin-phase7-reminder.md) — raise the Awin credentials + feed-coverage question unprompted when Bolts Together Phase 7 starts
+- [Bike data accuracy rule](bike-data-accuracy-rule.md) — never fabricate part specs; abstain instead. The load-bearing rule, carried into the rebuild
+- [Bike data sourcing method](bike-data-sourcing-method.md) — two-phase research→verify agents, and the model-number traps that catch people out
+- [Build My Bike active work](build-my-bike-active-work.md) — the abandoned homepage redesign and unbuilt chatbot on the old site
+- [Build My Bike branding](build-my-bike-branding.md) — legacy gold/brown identity, superseded by the blueprint palette
